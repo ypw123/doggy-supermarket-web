@@ -1,0 +1,7 @@
+node_modules
+dist
+.vercel
+screenshots
+*.local
+.env
+*.log
