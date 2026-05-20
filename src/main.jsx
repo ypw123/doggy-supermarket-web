@@ -161,15 +161,43 @@ function App() {
     setEntered(true);
   };
 
-  const requestLoginBeforeCart = () => {
-    const message = language === "zh" ? "请先登录，再加入商品。" : "Please log in before adding items.";
+  const showCartNotice = (message) => {
     setLoginNotice(message);
+    window.clearTimeout(showCartNotice.noticeTimer);
+    showCartNotice.noticeTimer = window.setTimeout(() => setLoginNotice(""), 3200);
+  };
+
+  const requestLoginBeforeCart = (message) => {
+    const notice = message || (language === "zh" ? "请先登录，再加入商品。" : "Please log in before adding items.");
+    showCartNotice(notice);
     window.dispatchEvent(new CustomEvent("pawberry:open-account"));
-    window.clearTimeout(requestLoginBeforeCart.noticeTimer);
-    requestLoginBeforeCart.noticeTimer = window.setTimeout(() => setLoginNotice(""), 3200);
     return {
       ok: false,
       code: "LOGIN_REQUIRED",
+      message: notice,
+    };
+  };
+
+  const handleCartError = (error) => {
+    if (error?.status === 401 || error?.code === "AUTH_REQUIRED" || error?.code === "INVALID_SESSION") {
+      setCustomer(null);
+      return requestLoginBeforeCart(language === "zh" ? "登录状态已失效，请先登录。" : "Your session expired. Please log in first.");
+    }
+
+    const cartErrorMessages = {
+      PRODUCT_ID_REQUIRED: { zh: "商品信息缺失，请刷新后再试。", en: "Product information is missing. Please refresh and try again." },
+      INVALID_QUANTITY: { zh: "商品数量不正确，请重新加入。", en: "The item quantity is invalid. Please try again." },
+      PRODUCT_NOT_FOUND: { zh: "这个商品暂时不可购买。", en: "This item is not available right now." },
+      OUT_OF_STOCK: { zh: "这个商品已经售罄。", en: "This item is out of stock." },
+      INSUFFICIENT_STOCK: { zh: "库存不足，无法继续加入。", en: "There is not enough stock for this item." },
+      NETWORK_ERROR: { zh: "商店服务暂时不可用，请稍后再试。", en: "The store service is unavailable. Please try again later." },
+    };
+    const fallback = language === "zh" ? "加入购物车失败，请稍后再试。" : "Could not add this item. Please try again.";
+    const message = cartErrorMessages[error?.code]?.[language] || error?.message || fallback;
+    showCartNotice(message);
+    return {
+      ok: false,
+      code: error?.code || "CART_ERROR",
       message,
     };
   };
@@ -177,10 +205,15 @@ function App() {
   const addToPreviewCart = async (productId) => {
     if (!customer) return requestLoginBeforeCart();
 
-    const result = await addPreviewCartItem(productId);
-    if (result.ok) {
-      setCartQuantities(cartQuantitiesFromCart(result.cart));
-      setBundleCartCount(0);
+    try {
+      const result = await addPreviewCartItem(productId);
+      if (result.ok) {
+        setCartQuantities(cartQuantitiesFromCart(result.cart));
+        setBundleCartCount(0);
+      }
+      return result;
+    } catch (error) {
+      return handleCartError(error);
     }
   };
 
@@ -196,12 +229,16 @@ function App() {
   const claimBundle = async (bundleId) => {
     if (!customer) return requestLoginBeforeCart();
 
-    const result = await claimPreviewBundle(bundleId);
-    if (result.ok) {
-      setCartQuantities(cartQuantitiesFromCart(result.cart));
-      setBundleCartCount(0);
+    try {
+      const result = await claimPreviewBundle(bundleId);
+      if (result.ok) {
+        setCartQuantities(cartQuantitiesFromCart(result.cart));
+        setBundleCartCount(0);
+      }
+      return result;
+    } catch (error) {
+      return handleCartError(error);
     }
-    return result;
   };
 
   const loginPreviewCustomer = async (credentials) => {

@@ -5,14 +5,23 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4000/api
 
 async function request(path, options = {}) {
   const { allowUnauthorized = false, ...fetchOptions } = options;
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...fetchOptions,
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...fetchOptions.headers,
-    },
-  });
+  let response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...fetchOptions,
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        ...fetchOptions.headers,
+      },
+    });
+  } catch (cause) {
+    const error = new Error("The store service is unavailable. Please try again later.");
+    error.code = "NETWORK_ERROR";
+    error.cause = cause;
+    throw error;
+  }
 
   const payload = await response.json().catch(() => null);
   if (allowUnauthorized && response.status === 401) return null;
