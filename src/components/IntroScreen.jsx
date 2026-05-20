@@ -1,5 +1,6 @@
 import { ArrowRight, Bone, Languages, PackageCheck, PawPrint, Sparkles, Store } from "lucide-react";
 import { IntroDogManager } from "./DogManager";
+import { assetUrl } from "../utils/assetUrl";
 
 export function IntroScreen({ t, language, setLanguage, enterMart, managerDog }) {
   return (
@@ -48,13 +49,13 @@ export function IntroScreen({ t, language, setLanguage, enterMart, managerDog })
             <span>{t.intro.orbit}</span>
           </div>
           <div className="orbit-item walk">
-            <img src="/products/walk.jpg" alt="" />
+            <img src={assetUrl("/products/walk.jpg")} alt="" />
           </div>
           <div className="orbit-item bed">
-            <img src="/products/bed.jpg" alt="" />
+            <img src={assetUrl("/products/bed.jpg")} alt="" />
           </div>
           <div className="orbit-item toy">
-            <img src="/products/play.jpg" alt="" />
+            <img src={assetUrl("/products/play.jpg")} alt="" />
           </div>
           <div className="orbit-item bath">
             <Sparkles size={20} />

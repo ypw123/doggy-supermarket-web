@@ -1,4 +1,5 @@
 import { siteCopy } from "../data/siteContent";
+import { assetUrl } from "../utils/assetUrl";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:4000/api";
 
@@ -31,7 +32,7 @@ function normalizeProduct(product) {
     ...product,
     id: product.id,
     price: product.price || `$${Math.round((product.priceCents || 0) / 100)}`,
-    image: product.image,
+    image: assetUrl(product.image),
     name: product.name || { en: product.nameEn || product.id, zh: product.nameZh || product.id },
     alt: product.alt || { en: product.name?.en || product.id, zh: product.name?.zh || product.id },
     detail: product.detail || { en: "", zh: "" },
@@ -82,15 +83,16 @@ export function cartQuantitiesFromCart(cart) {
 
 export async function fetchStorefrontConfig() {
   const config = await request("/storefront");
+  const assets = {
+    managerDog: "/brand/pawberry-manager-dog.png",
+    ...config.assets,
+  };
 
   return {
     ...config,
     copy: siteCopy,
     categories: config.categories || ["All", "Walk", "Play", "Rest", "Groom", "Feed", "Wear"],
-    assets: {
-      managerDog: "/brand/pawberry-manager-dog.png",
-      ...config.assets,
-    },
+    assets: Object.fromEntries(Object.entries(assets).map(([key, value]) => [key, assetUrl(value)])),
   };
 }
 
